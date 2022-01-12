@@ -1,0 +1,36 @@
+
+  yum-config-manager     --add-repo     https://download.docker.com/linux/centos/docker-ce.repo 
+  yum install -y  docker-ce docker-ce-cli containerd.io 
+  service docker start 
+  docker create    -v /opt/prometheus/data    -v /opt/consul-data    -v /var/lib/mysql    -v /var/lib/grafana    --name pmm-data    percona/pmm-server:latest /bin/true 
+  docker run -d -p 80:80 --volumes-from pmm-data  --name pmm-server --restart always percona/pmm-server:latest
+  docker stop pmm-server && docker rm pmm-server
+  
+ add mongodb nodes 
+ wget https://repo.percona.com/yum/percona-release-latest.noarch.rpm
+ yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm -y
+ yum install pmm-client -y
+ pmm-admin config --server 192.168.1.1:80 --force
+ pmm-admin add mongodb --uri mongodb://mng:mng123@localhost:27017
+
+ add postgres nodes 
+yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm -y
+yum install pmm-client -y
+pmm-admin config --server 10.168.1.1:80
+cd /tmp
+sudo -u postgres psql -c "CREATE USER pmm_user WITH PASSWORD 'x';"
+sudo -u postgres psql -c "ALTER USER pmm_user WITH SUPERUSER;"
+sudo -u postgres psql -c "CREATE DATABASE pmm_user;"
+
+pmm-admin add postgresql --host=10.168.1.2  --password='XpLm9YSK' --port=5432 --user=pmm_user
+pmm-admin list
+
+ add mysql nodes 
+
+yum install https://repo.percona.com/yum/percona-release-latest.noarch.rpm -y
+yum install pmm-client -y
+pmm-admin config --server 10.168.1.1:80
+CREATE USER 'pmm'@'%' IDENTIFIED BY 'x' WITH MAX_USER_CONNECTIONS 10;
+GRANT SELECT, PROCESS, SUPER, REPLICATION CLIENT, RELOAD ON *.* TO 'pmm'@'%';
+flush privileges;
+pmm-admin add mysql --user pmm --password x
